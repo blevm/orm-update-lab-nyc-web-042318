@@ -3,7 +3,8 @@ require 'pry'
 
 class Student
 
-  attr_accessor :name, :grade, :id
+  attr_accessor :name, :grade
+  attr_reader :id
 
   def initialize(name, grade, id=nil)
     @name = name
@@ -33,7 +34,7 @@ class Student
 
   def update
     sql = "UPDATE students SET name = ?, grade = ? WHERE id = ?"
-      DB[:conn].execute(sql, self.name, self.grade, self.id)
+    DB[:conn].execute(sql, self.name, self.grade, self.id)
   end
 
   def save
@@ -46,7 +47,6 @@ class Student
       SQL
 
       DB[:conn].execute(sql, self.name, self.grade)
-
       @id =  DB[:conn].execute("SELECT last_insert_rowid() FROM students")[0][0]
     end
   end
@@ -54,31 +54,16 @@ class Student
   def self.create(name, grade)
     new_student = self.new(name, grade)
     new_student.save
-    new_student
   end
 
   def self.new_from_db(row)
-    new_student = self.new(nil, nil)
-    new_student.id = row[0]
-    new_student.name = row[1]
-    new_student.grade = row[2]
-    new_student
+    self.new(row[1], row[2], row[0])
   end
 
   def self.find_by_name(name)
-    sql = <<-SQL
-      SELECT * FROM students
-      WHERE name = ?
-    SQL
-
-    if !DB[:conn].execute(sql, name)
-      self.update
-      if_result = DB[:conn].execute(sql, self.name)[0]
-      self.new_from_db(if_result)
-    else
-      else_result = DB[:conn].execute(sql, name)[0]
-      self.new_from_db(else_result)
-    end
+    sql = "SELECT * FROM students WHERE name = ?"
+    result = DB[:conn].execute(sql, name)[0]
+    self.new_from_db(result)
   end
 
 end
